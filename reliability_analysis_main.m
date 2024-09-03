@@ -1,4 +1,4 @@
-% %% Test-Retest Reliability of rs-FC in young and older adults 
+%% Test-Retest Reliability of rs-FC in young and older adults 
 % This script conducts a test-retest reliability analysis by:
 % 1) concatenating all the [subject's data,' ...
 % 2) splitting up the data into a "true half" (a large chunk of the [subject's' ...
@@ -21,7 +21,7 @@ data_dir = '/Users/dianaperez/Desktop/FC_Parcels_333'; % the timecourses for the
 output_dir = '/Users/dianaperez/Desktop/'; % where to store the results
 
 %% OPTIONS
-datasets = {'Lifespan-FSU', 'iNet-FSU'};%'Lifespan-NU', 'iNet-NU', 
+datasets = {'Lifespan-NU', 'iNet-NU', 'Lifespan-FSU', 'iNet-FSU'};% 
 
 % How many points to sample for "true" half
 truehalf_datapts = 3808; %3808 -> ~70 min, 5454 -> ~100 min, 8181 -> ~150 min
