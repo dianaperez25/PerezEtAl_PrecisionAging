@@ -19,7 +19,7 @@ if ~exist(output_dir)
 end
 
 %% OPTIONS
-datasets = {'iNet-FSU'};% 'Lifespan-NU', 'iNet-NU', 'Lifespan-FSU',  
+datasets = {'Lifespan-FSU', 'iNet-FSU'};% 'Lifespan-NU', 'iNet-NU',  
 match_data = 1; % if 1, will calculate the minimum possible amount of data available and will force all subs to have that amount of data
 amt_data = 1361; % if this is commented out or set to 0, then the script will calculate it
 exclude_subs = {'LS46', 'INET108'};
@@ -29,9 +29,12 @@ if match_data && amt_data == 0
     
     for d = 1:numel(datasets)
         count = 1;
-        [subject, sessions, N] = get_subjects(datasets{d}, exclude_subs);            
+        [subject, sessions, N] = get_subjects(datasets{d});            
         % get minimum amt of data per session
-        for s = 1:N           
+        for s = 1:N
+            if any(contains(exclude_subs, subject{s}))
+                continue;
+            else
                 for i = 1:sessions
                     allSubs_amtData(count, 1) = d;
                     allSubs_amtData(count, 2) = s;
@@ -47,22 +50,28 @@ if match_data && amt_data == 0
                     end
                 end
             end
+        end        
     end
     amt_data = min(allSubs_amtData(:,4));
 end
 
 %% SIMILARITY CALCULATIONS
+% create a matrix mask 
+maskmat = ones(333);
+maskmat = logical(triu(maskmat, 1));
+
 for d = 1:numel(datasets)
-    % create a matrix mask 
-    maskmat = ones(333);
-    maskmat = logical(triu(maskmat, 1));
+    
     % sets number of subjects and sessions depending on the dataset being
-    [subject, sessions, N] = get_subjects(datasets{d}, exclude_subs);
+    [subject, sessions, N] = get_subjects(datasets{d});
 
     % main loop; starts analysis
     count = 1; ses_lims = []; matcheddata_corrlin = [];
     for s = 1:numel(subject)
-        
+        if any(contains(exclude_subs, subject{s}))
+                disp(sprintf('skipping sub-%s!', subject{s}))
+                continue;
+        else
             ses_count = 0;
             for i = 1:sessions
 
@@ -98,6 +107,7 @@ for d = 1:numel(datasets)
                 end
             end
             ses_lims = [ses_lims; ses_count];
+        end        
     end
 
 % then, calculate the correlation/similarity across all of those linear matrices
@@ -130,17 +140,16 @@ for s = 1:numel(subject)
     if any(contains(exclude_subs, subject{s}))
         continue;
     else
-        lines = [count:(count+sessions(s)-1)];
-        sub_vals = simmat(lines,:);
-        maskmat = ones(sessions(s),sessions(s));
-        maskmat = logical(triu(maskmat, 1));
-        within_sub = sub_vals(:,lines);
-        within = [within; within_sub(maskmat)];
-        maskmat = ones(size(sub_vals));
-        maskmat(:,lines) = 0;
-        between = [between; sub_vals(maskmat==1)];
-        count = count+sessions(s);
-    end
+    lines = [count:(count+sessions(s)-1)];
+    sub_vals = simmat(lines,:);
+    maskmat = ones(sessions(s),sessions(s));
+    maskmat = logical(triu(maskmat, 1));
+    within_sub = sub_vals(:,lines);
+    within = [within; within_sub(maskmat)];
+    maskmat = ones(size(sub_vals));
+    maskmat(:,lines) = 0;
+    between = [between; sub_vals(maskmat==1)];
+    count = count+sessions(s);
 end
 mean_between = mean(between);
 mean_within = mean(within);
@@ -151,7 +160,7 @@ save([output_dir datasets{d} '_similarityMat_matchedData.mat'], 'simmat', 'amt_d
 end
 %% THE END
 
-function [subject, sessions, N] = get_subjects(dataset, exclude_subs)
+function [subject, sessions, N] = get_subjects(dataset)
 
 if strcmpi(dataset, 'Lifespan-NU')
     subject = {'LS02', 'LS03', 'LS05', 'LS08', 'LS11', 'LS14', 'LS16', 'LS17'}; %
@@ -180,7 +189,7 @@ elseif strcmpi(dataset, 'Lifespan-FSU')
     'LS76', 'LS77', 'LS79', 'LS85', 'LS89', 'LS94', 'LS108'};
     sessions = 5;
 end
-subject(:,find(contains(subject, exclude_subs))) = [];
+
 N = numel(subject);
 
 end
