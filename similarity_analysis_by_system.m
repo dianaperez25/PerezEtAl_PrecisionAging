@@ -20,7 +20,7 @@ if ~exist(output_dir)
     mkdir(output_dir)
 end
 %% OPTIONS
-datasets = {'Lifespan-NU', 'iNet-NU', 'Lifespan-FSU', 'iNet-FSU'};% 
+datasets = {'Lifespan-FSU', 'iNet-FSU'};%  'Lifespan-NU', 'iNet-NU', 
 atlas = 'Parcels333'; %Parcels333 for the Gordon surface parcellations or Seitzman300 for the volumetric ROI's
 match_data = 1; % if 1, will calculate the minimum possible amount of data available and will force all subs to have that amount of data
 amt_data = 1361; % if this is commented out or set to 0, then the script will calculate it
@@ -101,32 +101,32 @@ for d = 1:numel(datasets)
             end
             
             if exist(data_file, 'file')
-                load(data_file)
-                if strcmpi(atlas, 'Seitzman300')            
-                    masked_data = sess_roi_timeseries_concat(:,logical(tmask_concat'));
-                elseif strcmpi(atlas, 'Parcels333')
-                    masked_data = parcel_time(logical(tmask_concat), :)';            
-                end
-                               
-            % ... then sample the pre-defined amount of data from the timeseries data...
-                if size(masked_data,2)<amt_data || match_data == 0
-                    matched_data = masked_data;
-                else
-                    matched_data = masked_data(:,1:amt_data);
-                end
-                
-                %disp(sprintf('Total number of sample points for subject %s session %d is %d by %d...', subject{s}, i, size(matched_data,1), size(matched_data,2)))
-                
-                % ... calculate the correlation matrix...
-                systems_of_interest = matched_data(inds, :);
-                corrmat_matched_data = paircorr_mod(systems_of_interest');
-            
-                % ... make it linear and store it in a variable...
-                maskmat = ones(size(corrmat_matched_data,1));
-                maskmat = logical(triu(maskmat, 1));
-                matcheddata_corrlin(count,:) = single(FisherTransform(corrmat_matched_data(maskmat)));
-            
-                % ... then onto the next session.
+%                 load(data_file)
+%                 if strcmpi(atlas, 'Seitzman300')            
+%                     masked_data = sess_roi_timeseries_concat(:,logical(tmask_concat'));
+%                 elseif strcmpi(atlas, 'Parcels333')
+%                     masked_data = parcel_time(logical(tmask_concat), :)';            
+%                 end
+%                                
+%             % ... then sample the pre-defined amount of data from the timeseries data...
+%                 if size(masked_data,2)<amt_data || match_data == 0
+%                     matched_data = masked_data;
+%                 else
+%                     matched_data = masked_data(:,1:amt_data);
+%                 end
+%                 
+%                 %disp(sprintf('Total number of sample points for subject %s session %d is %d by %d...', subject{s}, i, size(matched_data,1), size(matched_data,2)))
+%                 
+%                 % ... calculate the correlation matrix...
+%                 systems_of_interest = matched_data(inds, :);
+%                 corrmat_matched_data = paircorr_mod(systems_of_interest');
+%             
+%                 % ... make it linear and store it in a variable...
+%                 maskmat = ones(size(corrmat_matched_data,1));
+%                 maskmat = logical(triu(maskmat, 1));
+%                 matcheddata_corrlin(count,:) = single(FisherTransform(corrmat_matched_data(maskmat)));
+%             
+%                 % ... then onto the next session.
                 count = count + 1; ses_count = ses_count + 1;
             else
                 disp(sprintf('sub-%s ses-%d data file is missing!', subject{s}, i))
@@ -136,7 +136,7 @@ for d = 1:numel(datasets)
     end
 
     % then, calculate the correlation/similarity across all of those linear matrices
-    simmat = corr(matcheddata_corrlin');
+    %simmat = corr(matcheddata_corrlin');
     clear matcheddata_corrlin
 
 %% MAKE FIGURE
@@ -174,9 +174,11 @@ for s = 1:numel(subject)
         maskmat = logical(triu(maskmat, 1));
         within_sub = sub_vals(:,lines);
         within = [within; within_sub(maskmat)];
+        sub_means.within(s) = mean(within_sub(maskmat));
         maskmat = ones(size(sub_vals));
         maskmat(:,lines) = 0;
         between = [between; sub_vals(maskmat==1)];
+        sub_means.between(s) = mean(sub_vals(maskmat==1));
         count = count+sessions(s);
     end
 end
@@ -186,7 +188,7 @@ mean_within = mean(within);
 disp(['The average similarity between subjects for ' output_str{sys} ' is ' num2str(mean(between))])
 disp(['The average similarity within subjects for ' output_str{sys} ' is ' num2str(mean(within))])
 systems = system_divisions{sys};
-save([output_dir datasets{d} '_' atlas '_' output_str{sys} '_similarityMat_MatchedData.mat'], 'simmat', 'amt_data', 'mean_between', 'mean_within', 'subject', 'systems')
+save([output_dir datasets{d} '_' atlas '_' output_str{sys} '_similarityMat_MatchedData.mat'], 'simmat', 'amt_data', 'mean_between', 'mean_within', 'subject', 'sub_means', 'systems')
 end
 end
 %% THE END

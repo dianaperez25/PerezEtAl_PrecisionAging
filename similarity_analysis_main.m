@@ -71,23 +71,23 @@ for d = 1:numel(datasets)
                 % for each session and each subject, load the timeseries data...
                 data_file = [data_dir '/sub-' subject{s} '_rest_ses-' num2str(i) '_parcel_timecourse.mat'];
                 if exist(data_file, 'file')
-                    load(data_file)
-                    masked_data = parcel_time(logical(tmask_concat), :)';
+                    %load(data_file)
+                    %masked_data = parcel_time(logical(tmask_concat), :)';
 
                     % ... then sample the pre-defined amount of data from the timeseries data...
-                    if size(masked_data,2)<amt_data || match_data == 0
-                        matched_data = masked_data;
-                    else
-                        matched_data = masked_data(:,1:amt_data);
-                    end
+                    %if size(masked_data,2)<amt_data || match_data == 0
+                       % matched_data = masked_data;
+                    %else
+                        %matched_data = masked_data(:,1:amt_data);
+                    %end
 
                     %disp(sprintf('Total number of sample points for subject %s is %d by %d...', subject{s}, size(matched_data,1), size(matched_data,2)))
 
                     % ... calculate the correlation matrix...
-                    corrmat_matched_data = paircorr_mod(matched_data');
+                    %corrmat_matched_data = paircorr_mod(matched_data');
 
                     % ... make it linear and store it in a variable...
-                    matcheddata_corrlin(count,:) = single(FisherTransform(corrmat_matched_data(maskmat)));
+                    %matcheddata_corrlin(count,:) = single(FisherTransform(corrmat_matched_data(maskmat)));
 
                     % ... then onto the next session.
                     count = count + 1; ses_count = ses_count + 1;
@@ -99,7 +99,7 @@ for d = 1:numel(datasets)
     end
 
 % then, calculate the correlation/similarity across all of those linear matrices
-simmat = corr(matcheddata_corrlin');
+%simmat = corr(matcheddata_corrlin');
 
 %% MAKE FIGURE
 figure('Position',[1 1 1000 800]);
@@ -135,17 +135,20 @@ for s = 1:numel(subject)
         maskmat = logical(triu(maskmat, 1));
         within_sub = sub_vals(:,lines);
         within = [within; within_sub(maskmat)];
+        sub_means.within(s) = mean(within_sub(maskmat));
         maskmat = ones(size(sub_vals));
         maskmat(:,lines) = 0;
         between = [between; sub_vals(maskmat==1)];
         count = count+sessions(s);
+        sub_means.between(s) = mean(sub_vals(maskmat==1));
+        
     end
 end
 mean_between = mean(between);
 mean_within = mean(within);
 disp(['The average similarity between subjects is ' num2str(mean(between))])
 disp(['The average similarity within subjects is ' num2str(mean(within))])
-save([output_dir datasets{d} '_similarityMat_matchedData.mat'], 'simmat', 'amt_data', 'mean_between', 'mean_within', 'subject', 'ses_lims')
+save([output_dir datasets{d} '_similarityMat_matchedData.mat'], 'simmat', 'amt_data', 'mean_between', 'mean_within', 'sub_means', 'subject', 'ses_lims')
 
 end
 %% THE END
