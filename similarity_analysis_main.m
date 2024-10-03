@@ -19,7 +19,7 @@ if ~exist(output_dir)
 end
 
 %% OPTIONS
-datasets = {'Lifespan-NU', 'iNet-NU', 'Lifespan-FSU', 'iNet-FSU'};% 
+datasets = {'Lifespan-NU', 'Lifespan-FSU', 'iNet-NU', 'iNet-FSU'};% 
 match_data = 1; % if 1, will calculate the minimum possible amount of data available and will force all subs to have that amount of data
 amt_data = 1361; % if this is commented out or set to 0, then the script will calculate it
 exclude_subs = {'LS46', 'INET108'};
@@ -145,7 +145,7 @@ mean_between = mean(between);
 mean_within = mean(within);
 disp(['The average similarity between subjects is ' num2str(mean(between))])
 disp(['The average similarity within subjects is ' num2str(mean(within))])
-save([output_dir datasets{d} '_similarityMat_matchedData.mat'], 'simmat', 'amt_data', 'mean_between', 'mean_within', 'subject')
+save([output_dir datasets{d} '_similarityMat_matchedData.mat'], 'simmat', 'amt_data', 'mean_between', 'mean_within', 'subject', 'ses_lims')
 
 end
 %% THE END
