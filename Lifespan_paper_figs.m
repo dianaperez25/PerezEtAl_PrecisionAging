@@ -283,3 +283,13 @@ type = 'right';
 pos = 1:11;
 col = [0.6350 0.0780 0.1840];
 [h, mu, sigma, q, notch] = al_goodplot(iNet_FSU_dice(:,1:11), pos, 1, col, type, [], 1.5)
+
+
+% Plot PCA values
+
+data_dir = '/Users/dianaperez/Desktop/';
+fname = sprintf('%s/Lifespan-NU_descriptiveIndivParcelInfo.mat', data_dir);
+load(fname);
+LifespanNU_avgPCA = [];
+for sub = 1:numel(subjects)
+    

@@ -13,7 +13,7 @@
 
 
 FC_metrics_dir = '/Volumes/fsmresfiles/PBS/Gratton_Lab/Lifespan/Diana/Diss/FCmetrics';
-dataset = {'iNet-FSU', 'Lifespan-FSU'};
+dataset = {'iNet-NU', 'Lifespan-NU'};
 exclude_subs = {'LS46', 'INET108', 'LS108', 'INET057'};
 
 iNet_wFC = []; iNet_bFC = []; iNet_seg = []; iNet_dice = []; iNet_size_diff = []; iNet_SM = []; iNet_assoc = [];
