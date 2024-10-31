@@ -19,7 +19,7 @@ rgb_colors = [1 0 0;
                   .8 .8 .6];
 
 for d = 1:numel(dataset)
-    close all;
+close all
     net_surf_area = [];
     [subjects, sessions, N] = get_subjects(dataset{d}, exclude_subs);
 
