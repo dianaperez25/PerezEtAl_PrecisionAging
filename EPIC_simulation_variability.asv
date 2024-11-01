@@ -191,7 +191,7 @@ set(gca,'FontSize',16)
 xlabel('Within-subject standard deviation','FontSize',20)
 ylabel({'Apparent between-subject'; 'standard deviation (ms)'},'FontSize',20)
 ylim([0 .2])
-lgd = legend('50','100','200','300','400','500','1,000','Location','northwester','FontSize',14);
+lgd = legend('50','100','200','300','400','500','1,000','Location','southeast','FontSize',14);
 title(lgd,'Sample size','FontSize',16)
 
 save('sim_varResults.mat','mean_bs_exper_std','CI_bs_exper_std','bs_std_cell','conIntvlh_cell',...
