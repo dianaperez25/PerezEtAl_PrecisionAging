@@ -21,9 +21,11 @@ data_dir = '/Users/dianaperez/Desktop/FC_Parcels_333'; % the timecourses for the
 output_dir = '/Users/dianaperez/Desktop/'; % where to store the results
 data_dir = '/Volumes/fsmresfiles/PBS/Gratton_Lab/Lifespan/Diana/Diss/Nifti/FC_Parcels_333/'; % the timecourses for the different parcels
 output_dir = '/Users/dianaperez/Desktop/'; % where to store the results
-%% OPTIONS
-datasets = {'iNet-NU', 'Lifespan-NU'};%, 'iNet-NU', 'Lifespan-FSU', 'iNet-FSU'};% 
+atlas_dir = '/Volumes/fsmresfiles/PBS/Gratton_Lab/Atlases/';
 
+%% OPTIONS
+datasets = {'iNet-NU', 'Lifespan-FSU', 'iNet-FSU'};% 'Lifespan-NU'};%, 
+atlas = 'Parcels333'; %Parcels333 for the Gordon surface parcellations or Seitzman300 for the volumetric ROI's
 % How many points to sample for "true" half
 truehalf_datapts = 3808; %3808 -> ~70 min, 5454 -> ~100 min, 8181 -> ~150 min
 
@@ -33,7 +35,24 @@ step_time = 2.5;
 step_datapts = round((60*step_time)/1.1);% 136 -? ~2.5 min, 272 -> ~5 min, will add this number of frames each time it subsamples data
 
 % How many iterations to run
-iterations = 1000;
+iterations = 50;
+
+%% SEPARATION BY SYSTEMS
+% here we specify the indices for the systems that we want to designate to
+% each category
+SM_systems = [3, 9, 10, 11]; %3: visual, 8: motor hand, 9: motor mouth, 11: auditory
+control_systems = [8, 4, 5, 6, 7]; % 8: CON, 4: FPN, 5: DAN, 6: VAN, 7: Salience
+control_related = [8,4,5]; %CON, FPN, DAN
+memory_default = [6, 7, 2, 12, 13]; %VAN, Salience, DMN, PERN, RetroSpl
+
+% This structure contains the system categories that will be analyzed
+% (I made it this way so that we can look at two or three categories without
+% changing the script too much)
+system_divisions = {SM_systems, control_systems, control_related, memory_default};
+output_str = {'sensorimotor', 'control', 'control-related', 'memory-default'}; % output strings for each of the categories being analyzed
+
+% load atlas parameters
+atlas_params = atlas_parameters_GrattonLab(atlas,atlas_dir);
 
 for d = 1:numel(datasets)
     dataset = datasets{d};
@@ -75,7 +94,13 @@ elseif strcmpi(dataset, 'Lifespan-FSU')
     'LS76', 'LS77', 'LS79', 'LS85', 'LS89', 'LS94', 'LS108'};
     sessions = 5;
 end
-sw_subs=[]; sw_iters=[];
+for sys = 1:numel(system_divisions)
+    % get indices for parcels belonging to the systems of interest
+        inds = [];
+        for n = 1:numel(system_divisions{sys})
+            inds = [inds; atlas_params.mods{system_divisions{sys}(n)}];
+        end
+    sw_subs=[]; sw_iters=[];
 
 for sub = 1:numel(subject)    
     data_struct = cell(1,sessions);
@@ -149,7 +174,8 @@ for sub = 1:numel(subject)
         %t3=tic;
         truehalf = cat_data(:,true_half_inds);
         corrmat_truehalf = paircorr_mod(truehalf');
-        maskmat = ones(333);
+        corrmat_truehalf_sys = corrmat_truehalf(inds, inds);
+        maskmat = ones(length(inds));
         maskmat = logical(triu(maskmat, 1));
         truehalf_corrlin(1,:) = corrmat_truehalf(maskmat);
         
@@ -182,6 +208,7 @@ for sub = 1:numel(subject)
             inds_this_chunk = [inds_this_chunk; indices_for_rest_of_data(set,:)'];
             sampledDatas{t} = rest_of_data(:,inds_this_chunk);
             corrmat = paircorr_mod(sampledDatas{t}');
+            corrmat_sys = corrmat(inds,inds);
             corrs{t} = paircorr_mod(triu(corrmat_truehalf), triu(corrmat));
             corrlins(t,:) = corrmat(maskmat);
             set = set + 1;
@@ -242,7 +269,7 @@ disp(sprintf('Average time elapsed per subject - %d minutes', mean(mean(sw_subs)
 
 % Take mean across subjects of the mean of the correlation values across
 % iterations
-save([output_dir dataset '_Reliability_truehalf_' num2str(truehalf_datapts) '_corrdata.mat'], 'allsubs_corrs', 'means', 'times_all', '-v7.3')
+save([output_dir dataset '_Reliability_' output_str{sys} '_truehalf_' num2str(truehalf_datapts) '_corrdata.mat'], 'allsubs_corrs', 'means', 'times_all', '-v7.3')
 figure;
 
 if strcmpi(dataset, 'Lifespan-NU')
@@ -276,9 +303,10 @@ plot(times_all,mean_of_means(1:size(times_all,2)), ':', 'Color', [0,0,0], 'LineW
 ylabel('Pearson Correlation (r)');
 xlabel('Time (Minutes)');
 
-print(gcf,[output_dir dataset '_Reliability_truehalf_' num2str(truehalf_datapts) '.jpg'],'-dpng','-r300');
+print(gcf,[output_dir dataset '_Reliability_' output_str{sys} '_truehalf_' num2str(truehalf_datapts) '.jpg'],'-dpng','-r300');
 close all
 
+end
 end
 
 

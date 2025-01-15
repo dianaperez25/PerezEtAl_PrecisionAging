@@ -8,6 +8,7 @@
 % Written to work with both Lifespan and iNetworks subjects assumming 5 and
 % 4 sessions for each dataset, respectively
 % This script will force the same amount of data across the two datasets
+%% THIS SCRIPT ONLY LOOKS AT SUBSAMPLE OF SUBJECTS FOR ILLUSTRATION PURPOSES
 
 clear all
 %% ------------------------------------------------------------------------------------------------
@@ -19,11 +20,11 @@ if ~exist(output_dir)
 end
 
 %% OPTIONS
-datasets = {'Lifespan-NU', 'iNet-NU', 'iNet-FSU', 'Lifespan-FSU'};% 
+datasets = {'Lifespan-FSU', 'iNet-NU', 'iNet-FSU'};% 'Lifespan-NU', 
 match_data = 1; % if 1, will calculate the minimum possible amount of data available and will force all subs to have that amount of data
 amt_data = 1361; % if this is commented out or set to 0, then the script will calculate it
-include_no_min_data = 1; % should sessions/subjects with not enough data be included anyway? 1 = yes, 0 = no; will keep track of how many subjects don't meet the min data
-exclude_subs = {'LS46', 'INET108'};
+exclude_subs = {'LS46', 'INET108', 'LS72'};
+sample_size = 10;
 
 %% DATA MATCHING
 if match_data && amt_data == 0
@@ -56,15 +57,15 @@ end
 %% SIMILARITY CALCULATIONS
 for d = 1:numel(datasets)
     disp(['dataset: ' datasets{d}])
-    no_min_data = [];
     % create a matrix mask 
     maskmat = ones(333);
     maskmat = logical(triu(maskmat, 1));
     % sets number of subjects and sessions depending on the dataset being
     [subject, sessions, N] = get_subjects(datasets{d}, exclude_subs);
-
+    subsample = datasample(subject, 10, 'Replace', false);
+    subject = subsample;
     % main loop; starts analysis
-    count = 1; ses_lims = []; matcheddata_corrlin = []; tick_marks = 0;
+    count = 1; ses_lims = []; matcheddata_corrlin = [];
     for s = 1:numel(subject)
         
             ses_count = 0;
@@ -79,9 +80,6 @@ for d = 1:numel(datasets)
                     % ... then sample the pre-defined amount of data from the timeseries data...
                     if size(masked_data,2)<amt_data || match_data == 0
                        matched_data = masked_data;
-                       if size(masked_data,2)<amt_data
-                           no_min_data = [no_min_data; [subject, i]];
-                       end
                     else
                         matched_data = masked_data(:,1:amt_data);
                     end
@@ -101,7 +99,6 @@ for d = 1:numel(datasets)
                 end
             end
             ses_lims = [ses_lims; ses_count];
-            tick_marks = [tick_marks, tick_marks(end)+ses_count];
     end
 
 % then, calculate the correlation/similarity across all of those linear matrices
@@ -111,7 +108,7 @@ simmat = corr(matcheddata_corrlin');
 figure('Position',[1 1 1000 800]);
 load better_jet_colormap.mat
 imagesc(simmat,[0 1]); colormap(better_jet_colormap_diff);
-tick_marks = [tick_marks]+0.5;
+tick_marks = [0:sessions:(5*numel(subject))]+0.5;
 hline_new(tick_marks,'k',2);
 vline_new(tick_marks,'k',2);
 set(gca,'XTick',tick_marks(1:numel(subject))+(sessions/2), 'YTick', tick_marks(1:numel(subject))+(sessions/2), 'XTickLabel',...
@@ -120,9 +117,9 @@ axis square;
 colorbar;
 title('Correlation Matrix Similarity');
 if match_data
-    saveas(gcf,[output_dir datasets{d} '_similarityMat_matchedData_' num2str(amt_data) '.jpg'],'jpg');
+    saveas(gcf,[output_dir datasets{d} '_similarityMat_matchedData_' num2str(amt_data) '_subsample.jpg'],'jpg');
 else
-    saveas(gcf,[output_dir datasets{d} '_similarityMat_unMatchedData.jpg'],'jpg');
+    saveas(gcf,[output_dir datasets{d} '_similarityMat_unMatchedData_subsample.jpg'],'jpg');
 end
 close('all');
 
@@ -154,7 +151,7 @@ mean_between = mean(between);
 mean_within = mean(within);
 disp(['The average similarity between subjects is ' num2str(mean(between))])
 disp(['The average similarity within subjects is ' num2str(mean(within))])
-save([output_dir datasets{d} '_similarityMat_matchedData.mat'], 'simmat', 'amt_data', 'mean_between', 'mean_within', 'sub_means', 'subject', 'ses_lims')
+save([output_dir datasets{d} '_similarityMat_matchedData_subsample.mat'], 'simmat', 'amt_data', 'mean_between', 'mean_within', 'sub_means', 'subject', 'ses_lims')
 
 end
 %% THE END

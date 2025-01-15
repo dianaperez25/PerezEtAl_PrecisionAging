@@ -21,7 +21,7 @@ addpath(genpath('/Users/dianaperez/Documents/GitHub/GrattonLab-General-Repo/'))
 addpath(genpath('/Users/dianaperez/Documents/GitHub/Lifespan-Analysis/'))
 
 %% PATHS
-data_dir = '/Users/dianaperez/Desktop/FC_Parcels_333'; % the timecourses for the different parcels
+data_dir = '/Volumes/fsmresfiles/PBS/Gratton_Lab/Lifespan/Diana/Diss/Nifti/FC_Parcels_333/'; % the timecourses for the different parcels
 output_dir = '/Users/dianaperez/Desktop/'; % where to store the results
 atlas_dir = '/Volumes/fsmresfiles/PBS/Gratton_Lab/Atlases/';
 
@@ -30,6 +30,7 @@ atlas_dir = '/Volumes/fsmresfiles/PBS/Gratton_Lab/Atlases/';
 datasets = {'Lifespan-NU', 'iNet-NU', 'Lifespan-FSU', 'iNet-FSU'};% 
 atlas = 'Parcels333';
 neg_corrs = 'zero'; % How to handle negative correlations 'nan', 'zero', or 'asis'
+exclude_subs = {'LS46', 'INET108'};
 
 % How much time to sample for "true half" in minutes (how many data points that
 % corresponds to is calculated below)
@@ -96,6 +97,9 @@ sw_subs=[]; sw_iters=[];
     %initiate some variables
     sub_seg_index = []; between_FC = []; within_FC = [];
 for sub = 1:numel(subject)    
+    if contains(exclude_subs, subject{sub})
+        disp(sprintf('Excluding sub-%s', subject{sub}))
+    else
     data_struct = cell(1,sessions);
     total_datapts = 0;
     tStart=tic;
@@ -234,7 +238,7 @@ for sub = 1:numel(subject)
    disp(sprintf('Finished Processing for sub-%s: time elapsed %d minutes', subject{sub}, toc(tStart)/60)) 
    sw_subs=toc(tStart);
 end
-
+end
 disp(sprintf('Finished Processing for Dataset %s', dataset))
 disp('STATS:')
 disp(sprintf('Total time elapsed - %d hours', toc(t0)/360))
