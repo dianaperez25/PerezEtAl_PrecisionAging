@@ -12,7 +12,7 @@
 clear all
 %% ------------------------------------------------------------------------------------------------
 %% PATHS
-data_dir = '/Volumes/fsmresfiles/PBS/Gratton_Lab/Lifespan/Post-COVID/BIDS/derivatives/postFCproc_CIFTI/FC_Parcels_333/';
+data_dir = '/Volumes/fsmresfiles/PBS/Gratton_Lab/Lifespan/Diana/Diss/Nifti/FC_Parcels_333/';
 output_dir = '/Users/dianaperez/Desktop/';
 atlas_dir = '/Volumes/fsmresfiles/PBS/Gratton_Lab/Atlases/';
 
@@ -20,7 +20,7 @@ if ~exist(output_dir)
     mkdir(output_dir)
 end
 %% OPTIONS
-datasets = {'Lifespan-FSU', 'iNet-FSU'};%  'Lifespan-NU', 'iNet-NU', 
+datasets = {'Lifespan-NU', 'iNet-NU', 'Lifespan-FSU', 'iNet-FSU'};%   
 atlas = 'Parcels333'; %Parcels333 for the Gordon surface parcellations or Seitzman300 for the volumetric ROI's
 match_data = 1; % if 1, will calculate the minimum possible amount of data available and will force all subs to have that amount of data
 amt_data = 1361; % if this is commented out or set to 0, then the script will calculate it
@@ -101,31 +101,31 @@ for d = 1:numel(datasets)
             end
             
             if exist(data_file, 'file')
-%                 load(data_file)
-%                 if strcmpi(atlas, 'Seitzman300')            
-%                     masked_data = sess_roi_timeseries_concat(:,logical(tmask_concat'));
-%                 elseif strcmpi(atlas, 'Parcels333')
-%                     masked_data = parcel_time(logical(tmask_concat), :)';            
-%                 end
-%                                
-%             % ... then sample the pre-defined amount of data from the timeseries data...
-%                 if size(masked_data,2)<amt_data || match_data == 0
-%                     matched_data = masked_data;
-%                 else
-%                     matched_data = masked_data(:,1:amt_data);
-%                 end
-%                 
-%                 %disp(sprintf('Total number of sample points for subject %s session %d is %d by %d...', subject{s}, i, size(matched_data,1), size(matched_data,2)))
-%                 
-%                 % ... calculate the correlation matrix...
-%                 systems_of_interest = matched_data(inds, :);
-%                 corrmat_matched_data = paircorr_mod(systems_of_interest');
-%             
-%                 % ... make it linear and store it in a variable...
-%                 maskmat = ones(size(corrmat_matched_data,1));
-%                 maskmat = logical(triu(maskmat, 1));
-%                 matcheddata_corrlin(count,:) = single(FisherTransform(corrmat_matched_data(maskmat)));
-%             
+                load(data_file)
+                if strcmpi(atlas, 'Seitzman300')            
+                    masked_data = sess_roi_timeseries_concat(:,logical(tmask_concat'));
+                elseif strcmpi(atlas, 'Parcels333')
+                    masked_data = parcel_time(logical(tmask_concat), :)';            
+                end
+
+            % ... then sample the pre-defined amount of data from the timeseries data...
+                if size(masked_data,2)<amt_data || match_data == 0
+                    matched_data = masked_data;
+                else
+                    matched_data = masked_data(:,1:amt_data);
+                end
+
+                %disp(sprintf('Total number of sample points for subject %s session %d is %d by %d...', subject{s}, i, size(matched_data,1), size(matched_data,2)))
+
+                % ... calculate the correlation matrix...
+                systems_of_interest = matched_data(inds, :);
+                corrmat_matched_data = paircorr_mod(systems_of_interest');
+
+                % ... make it linear and store it in a variable...
+                maskmat = ones(size(corrmat_matched_data,1));
+                maskmat = logical(triu(maskmat, 1));
+                matcheddata_corrlin(count,:) = single(FisherTransform(corrmat_matched_data(maskmat)));
+
 %                 % ... then onto the next session.
                 count = count + 1; ses_count = ses_count + 1;
             else
@@ -136,7 +136,7 @@ for d = 1:numel(datasets)
     end
 
     % then, calculate the correlation/similarity across all of those linear matrices
-    %simmat = corr(matcheddata_corrlin');
+    simmat = corr(matcheddata_corrlin');
     clear matcheddata_corrlin
 
 %% MAKE FIGURE

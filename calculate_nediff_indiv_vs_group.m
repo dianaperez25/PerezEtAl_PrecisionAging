@@ -12,7 +12,7 @@ end
 
 datasets = {'Lifespan-NU', 'iNet-NU', 'Lifespan-FSU', 'iNet-FSU'};% 
 atlas = 'Parcels333';
-exclude_subs = {'LS46', 'INET108'};
+exclude_subs = {'INET001', 'INET061', 'LS47', 'LS46', 'INET108'};
 
 
 % load the group average networks
@@ -32,13 +32,13 @@ for d = 1:numel(datasets)
     for sub = 1:N
         out_data = [];
 
-        indiv_net_fname = sprintf('%s/sub-%s_dice_WTA_map_kden0.05.dtseries.nii', subjects{sub})
+        indiv_net_fname = sprintf('%s/sub-%s_dice_WTA_map_kden0.05.dtseries.nii', template_match_dir, subjects{sub});
         indiv_nets = ft_read_cifti_mod(indiv_net_fname);
         indiv_nets = indiv_nets.data;
 
         for n = 1:length(nets)
             %index network vertices in individual
-            indiv_net_verts = find(indiv_nets.data==nets(n));
+            indiv_net_verts = find(indiv_nets==nets(n));
             indiv_this_net = zeros(59412,1);
             indiv_this_net(indiv_net_verts) = 1;
             
@@ -49,17 +49,17 @@ for d = 1:numel(datasets)
             
             %calculate surface area of individual network
             out_data.indiv(2,n) = length(indiv_net_verts);
-            out_data.indiv(1,n) = sum(surf_area.data(indiv_net_verts));
+            out_data.indiv(1,n) = sum(surf_area(indiv_net_verts));
             
             %calculate surface area of individual network
             out_data.group(1,n) = length(group_verts);
-            out_data.group(2,n) = sum(surf_area.data(group_verts));
+            out_data.group(2,n) = sum(surf_area(group_verts));
             
             %calculate dice overlap bewteen individual and group average
             %nets
             out_data.dice_overlap(n) = dice_coefficient_mod(group_net, indiv_this_net);
         end
-        outfile = sprintf('%s/sub-%s_FCmetrics.mat', outdir, subject);
+        outfile = sprintf('%s/sub-%s_FCmetrics.mat', out_dir, subjects{sub});
         save(outfile, 'out_data', '-v7.3')
     end
 end

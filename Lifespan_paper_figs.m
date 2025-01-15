@@ -1,7 +1,8 @@
 %% Figures for papers
 
 
-data_dir = '/Users/dianaperez/Desktop/';
+%data_dir = '/Users/dianaperez/Desktop/';
+data_dir = '/Volumes/fsmresfiles/PBS/Gratton_Lab/Lifespan/Diana/Diss/FCmetrics';
 
 %% Average Number of Parcels
 figure;
@@ -291,5 +292,5 @@ data_dir = '/Users/dianaperez/Desktop/';
 fname = sprintf('%s/Lifespan-NU_descriptiveIndivParcelInfo.mat', data_dir);
 load(fname);
 LifespanNU_avgPCA = [];
-for sub = 1:numel(subjects)
+%for sub = 1:numel(subjects)
     
