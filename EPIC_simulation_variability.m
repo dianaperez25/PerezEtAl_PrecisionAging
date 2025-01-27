@@ -30,11 +30,11 @@ LwB = 2.5;  % lower bound
 % BETWEEN SUBJECT 'TRUE' DISTRIBUTION (values from Robinson and Steyvers' [2023] data)
 bs_mean = .4;  % approx congruency effect (in ms)
 bs_std = .02;  % approx congruency effect var across participants with MANY trials (in ms)
-bs_std_list = [.2 .3 .35 .4 .45];  % if you want to loop through different true bs variances
+bs_std_list = [.02 .03 .035 .04 .045];  % if you want to loop through different true bs variances
 % note, bs std is SET!!
 
 % WITHIN SUBJECT VARIANCE ESTIMATES (values estimated from our study)
-ws_std_list = [.4 .6 .7 .75 .8]./2; % approx from plot, Method 2 (ms)
+ws_std_list = [.04 .06 .07 .075 .08]./2; % approx from plot, Method 2 (ms)
 % correspond with ws 95% CI with 50, 100, 200, 400, 800, 1600, 3200, 6400
 % trials; divided by 2 so only a single std rather than 2 away
 
@@ -81,7 +81,7 @@ yline(bs_std,'r--','LineWidth',1.5);
 set(gca,'FontSize',16)
 xlabel('Within-subject standard deviation','FontSize',20)
 ylabel({'Apparent between-subject'; 'standard deviation'},'FontSize',20)
-ylim([0 1])
+ylim([0 .2])
 legend('','True between-subject standard deviation','FontSize',18)
 
 %% Simulation 2. Varying the size of between-subject variability
@@ -134,12 +134,12 @@ end
 set(gca,'FontSize',16)
 xlabel('Within-subject standard deviation','FontSize',20)
 ylabel({'Apparent between-subject'; 'standard deviation'},'FontSize',20);
-ylim([0 1])
-lgd = legend('.2','.3','.35','.4','.45', 'Location','southeast','FontSize',12);
+ylim([0 .1])
+lgd = legend('.02','.03','.035','.04','.045', 'Location','southeast','FontSize',12);
 title(lgd,'True between-subject standard deviation','FontSize',13)
 
 %% Simulation 3. Varying the number of simulated participants
-bs_std = 30;
+bs_std = .02;
 % Preassignment
 bs_std_cell2 = nan(length(n_subs_list),length(ws_std_list));
 conIntvlh_cell2 = nan(length(n_subs_list),length(ws_std_list));
@@ -190,8 +190,8 @@ end
 set(gca,'FontSize',16)
 xlabel('Within-subject standard deviation','FontSize',20)
 ylabel({'Apparent between-subject'; 'standard deviation (ms)'},'FontSize',20)
-ylim([0 1])
-lgd = legend('50','100','200','300','400','500','1,000','Location','southeast','FontSize',14);
+ylim([0 .2])
+lgd = legend('50','100','200','300','400','500','1,000','Location','northwester','FontSize',14);
 title(lgd,'Sample size','FontSize',16)
 
 save('sim_varResults.mat','mean_bs_exper_std','CI_bs_exper_std','bs_std_cell','conIntvlh_cell',...

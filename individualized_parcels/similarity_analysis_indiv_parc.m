@@ -12,17 +12,16 @@
 clear all
 %% ------------------------------------------------------------------------------------------------
 %% PATHS
-data_dir = '/Volumes/fsmresfiles/PBS/Gratton_Lab/Lifespan/Diana/Diss/Nifti/FC_Parcels_333/';
+data_dir = '/Volumes/fsmresfiles/PBS/Gratton_Lab/Lifespan/Diana/Diss/indiv_parcellation/avg_timecourses/';
 output_dir = '/Users/dianaperez/Desktop/';
 if ~exist(output_dir)
     mkdir(output_dir)
 end
 
 %% OPTIONS
-datasets = {'Lifespan-NU', 'iNet-NU', 'iNet-FSU', 'Lifespan-FSU'};% 
+datasets = {'Lifespan-NU', 'Lifespan-FSU', 'iNet-NU', 'iNet-FSU'};% 
 match_data = 1; % if 1, will calculate the minimum possible amount of data available and will force all subs to have that amount of data
 amt_data = 1361; % if this is commented out or set to 0, then the script will calculate it
-include_no_min_data = 1; % should sessions/subjects with not enough data be included anyway? 1 = yes, 0 = no; will keep track of how many subjects don't meet the min data
 exclude_subs = {'LS46', 'INET108'};
 
 %% DATA MATCHING
@@ -38,9 +37,9 @@ if match_data && amt_data == 0
                     allSubs_amtData(count, 1) = d;
                     allSubs_amtData(count, 2) = s;
                     allSubs_amtData(count, 3) = i;
-                    data_file = [data_dir '/sub-' subject{s} '_rest_ses-' num2str(i) '_parcel_timecourse.mat'];
+                    data_file = [data_dir '/sub-' subject{s} '_ses-' num2str(i) '_individual_parcels_average_timecourses_masked.mat'];
                     if exist(data_file, 'file')
-                        load([data_dir '/sub-' subject{s} '_rest_ses-' num2str(i) '_parcel_timecourse.mat'])
+                        load([data_dir '/sub-' subject{s} '_ses-' num2str(i) '_individual_parcels_average_timecourses_masked.mat'])
                         masked_data = parcel_time(logical(tmask_concat),:)';
                         allSubs_amtData(count, 4) = size(masked_data,2);
                         count = count + 1;
@@ -56,82 +55,88 @@ end
 %% SIMILARITY CALCULATIONS
 for d = 1:numel(datasets)
     disp(['dataset: ' datasets{d}])
-    no_min_data = [];
-    % create a matrix mask 
-    maskmat = ones(333);
-    maskmat = logical(triu(maskmat, 1));
+    
     % sets number of subjects and sessions depending on the dataset being
     [subject, sessions, N] = get_subjects(datasets{d}, exclude_subs);
 
     % main loop; starts analysis
-    count = 1; ses_lims = []; matcheddata_corrlin = []; tick_marks = 0;
+    count = 1; ses_lims = []; matcheddata_corrlin = []; subs_avg = []; tick_marks = 0;
     for s = 1:numel(subject)
-        
+            this_sub = [];
             ses_count = 0;
             for i = 1:sessions
-
+                
                 % for each session and each subject, load the timeseries data...
-                data_file = [data_dir '/sub-' subject{s} '_rest_ses-' num2str(i) '_parcel_timecourse.mat'];
+                data_file = [data_dir '/sub-' subject{s} '_ses-' num2str(i) '_individual_parcels_average_timecourses_masked.mat'];
                 if exist(data_file, 'file')
                     load(data_file)
-                    masked_data = parcel_time(logical(tmask_concat), :)';
+                    masked_data = avg_parc_ts;
 
                     % ... then sample the pre-defined amount of data from the timeseries data...
                     if size(masked_data,2)<amt_data || match_data == 0
                        matched_data = masked_data;
-                       if size(masked_data,2)<amt_data
-                           no_min_data = [no_min_data; [subject, i]];
-                       end
+                       disp(sprintf('Total number of sample points for subject %s sesssion %d is %d by %d...', subject{s}, i, size(matched_data,1), size(matched_data,2)))
                     else
                         matched_data = masked_data(:,1:amt_data);
                     end
-
-                    disp(sprintf('Total number of sample points for subject %s is %d by %d...', subject{s}, size(matched_data,1), size(matched_data,2)))
+                    
+                    % create a matrix mask 
+                    maskmat = ones(size(matched_data,1));
+                    maskmat = logical(triu(maskmat, 1));
 
                     % ... calculate the correlation matrix...
                     corrmat_matched_data = paircorr_mod(matched_data');
-
+                    this_sub(i,:,:,:) = corrmat_matched_data;  
                     % ... make it linear and store it in a variable...
                     matcheddata_corrlin(count,:) = single(FisherTransform(corrmat_matched_data(maskmat)));
-
+                    
                     % ... then onto the next session.
-                    count = count + 1; ses_count = ses_count + 1;
+                    count = count + 1; ses_count = ses_count + 1; 
                 else
                     disp(sprintf('sub-%s ses-%d data file is missing!', subject{s}, i))
                 end
             end
-            ses_lims = [ses_lims; ses_count];
-            tick_marks = [tick_marks, tick_marks(end)+ses_count];
+            ses_lims = [ses_lims; ses_count]; tick_marks = [tick_marks, tick_marks(end)+ses_count];
+            this_sub_avg_corrmat = squeeze(mean(this_sub));
+            subs_avg(s,:) = single(FisherTransform(this_sub_avg_corrmat(maskmat)));
     end
 
 % then, calculate the correlation/similarity across all of those linear matrices
+dataset_avg = mean(subs_avg);
+matcheddata_corrlin(count,:) = dataset_avg; ses_lims = [ses_lims; 1]; tick_marks = [tick_marks, tick_marks(end)+1];
+
 simmat = corr(matcheddata_corrlin');
 
 %% MAKE FIGURE
 figure('Position',[1 1 1000 800]);
 load better_jet_colormap.mat
 imagesc(simmat,[0 1]); colormap(better_jet_colormap_diff);
-tick_marks = [tick_marks]+0.5;
+%tick_marks = [0:sessions:(5*numel(subject))]+0.5;
+tick_marks = tick_marks+0.5;
 hline_new(tick_marks,'k',2);
 vline_new(tick_marks,'k',2);
 set(gca,'XTick',tick_marks(1:numel(subject))+(sessions/2), 'YTick', tick_marks(1:numel(subject))+(sessions/2), 'XTickLabel',...
     subject, 'YTickLabel', subject);
+set(gca,'XTick',tick_marks(end)+(.5), 'YTick', tick_marks(end)+(.5), 'XTickLabel',...
+    'Group', 'YTickLabel', 'Group');
 axis square;
-colorbar;
-title('Correlation Matrix Similarity');
+%colorbar;
+%title('Correlation Matrix Similarity');
 if match_data
-    saveas(gcf,[output_dir datasets{d} '_similarityMat_matchedData_' num2str(amt_data) '.jpg'],'jpg');
+    saveas(gcf,[output_dir datasets{d} '_similarityMat_indiv_parcels_matchedData_' num2str(amt_data) '.jpg'],'jpg');
 else
-    saveas(gcf,[output_dir datasets{d} '_similarityMat_unMatchedData.jpg'],'jpg');
+    saveas(gcf,[output_dir datasets{d} '_similarityMat_indiv_parcels_unMatchedData.jpg'],'jpg');
 end
 close('all');
 
+%delete group average for the next part
+%simmat(end, :) = []; simmat(:, end) = []; 
 %% CALCULATE average within- and between-subject correlations
 count = 1;
 within = [];
 between = [];
 sessions = ses_lims;
-for s = 1:numel(subject)
+for s = 1:numel(subject)-1
     if any(contains(exclude_subs, subject{s}))
         continue;
     else
@@ -154,7 +159,7 @@ mean_between = mean(between);
 mean_within = mean(within);
 disp(['The average similarity between subjects is ' num2str(mean(between))])
 disp(['The average similarity within subjects is ' num2str(mean(within))])
-save([output_dir datasets{d} '_similarityMat_matchedData.mat'], 'simmat', 'amt_data', 'mean_between', 'mean_within', 'sub_means', 'subject', 'ses_lims')
+save([output_dir datasets{d} '_similarityMat_indiv_parcels_matchedData.mat'], 'simmat', 'amt_data', 'mean_between', 'mean_within', 'sub_means', 'subject', 'ses_lims')
 
 end
 %% THE END

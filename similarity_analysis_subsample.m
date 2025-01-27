@@ -1,47 +1,30 @@
 %% Script for Similarity analysis, but with option to force the same amount of data per subject 
-% This script calculates the correlation (aka the similarity) across
-% sessions and subjects. 
-% Input: .mat files containing timecourses for eithe the volume
+% This script calculates the correlation (i.e. the similarity) of rs-FC matrices
+% across sessions and subjects. 
+% Input: .mat files containing timecourses for either the volume
 % ROI's (Seitzman300) or the surface parcels (Gordon333)
 % Output: a similarity matrix figure that will be saved, and the average
 % between- and within-subject correlations (will not be saved)
 % Written to work with both Lifespan and iNetworks subjects assumming 5 and
 % 4 sessions for each dataset, respectively
 % This script will force the same amount of data across the two datasets
+%% THIS SCRIPT ONLY LOOKS AT SUBSAMPLE OF SUBJECTS FOR ILLUSTRATION PURPOSES
 
 clear all
 %% ------------------------------------------------------------------------------------------------
 %% PATHS
 data_dir = '/Volumes/fsmresfiles/PBS/Gratton_Lab/Lifespan/Diana/Diss/Nifti/FC_Parcels_333/';
 output_dir = '/Users/dianaperez/Desktop/';
-atlas_dir = '/Volumes/fsmresfiles/PBS/Gratton_Lab/Atlases/';
-
 if ~exist(output_dir)
     mkdir(output_dir)
 end
+
 %% OPTIONS
-datasets = {'Lifespan-NU', 'iNet-NU', 'Lifespan-FSU', 'iNet-FSU'};%   
-atlas = 'Parcels333'; %Parcels333 for the Gordon surface parcellations or Seitzman300 for the volumetric ROI's
+datasets = {'Lifespan-FSU', 'iNet-NU', 'iNet-FSU'};% 'Lifespan-NU', 
 match_data = 1; % if 1, will calculate the minimum possible amount of data available and will force all subs to have that amount of data
 amt_data = 1361; % if this is commented out or set to 0, then the script will calculate it
-exclude_subs = {'LS46', 'INET108'};
-
-%% SEPARATION BY SYSTEMS
-% here we specify the indices for the systems that we want to designate to
-% each category
-SM_systems = [3, 9, 10, 11]; %3: visual, 8: motor hand, 9: motor mouth, 11: auditory
-control_systems = [8, 4, 5, 6, 7]; % 8: CON, 4: FPN, 5: DAN, 6: VAN, 7: Salience
-control_related = [8,4,5]; %CON, FPN, DAN
-memory_default = [6, 7, 2, 12, 13]; %VAN, Salience, DMN, PERN, RetroSpl
-
-% This structure contains the system categories that will be analyzed
-% (I made it this way so that we can look at two or three categories without
-% changing the script too much)
-system_divisions = {SM_systems, control_systems, control_related, memory_default};
-output_str = {'sensorimotor', 'control', 'control-related', 'memory-default'}; % output strings for each of the categories being analyzed
-
-% load atlas parameters
-atlas_params = atlas_parameters_GrattonLab(atlas,atlas_dir);
+exclude_subs = {'LS46', 'INET108', 'LS72'};
+sample_size = 10;
 
 %% DATA MATCHING
 if match_data && amt_data == 0
@@ -72,72 +55,54 @@ if match_data && amt_data == 0
 end
 
 %% SIMILARITY CALCULATIONS
-
-% sets number of subjects and sessions depending on the dataset being
-% analyzed
 for d = 1:numel(datasets)
     disp(['dataset: ' datasets{d}])
-    for sys = 1:numel(system_divisions)
+    % create a matrix mask 
+    maskmat = ones(333);
+    maskmat = logical(triu(maskmat, 1));
+    % sets number of subjects and sessions depending on the dataset being
+    [subject, sessions, N] = get_subjects(datasets{d}, exclude_subs);
+    subsample = datasample(subject, 10, 'Replace', false);
+    subject = subsample;
+    % main loop; starts analysis
+    count = 1; ses_lims = []; matcheddata_corrlin = [];
+    for s = 1:numel(subject)
+        
+            ses_count = 0;
+            for i = 1:sessions
 
-        % get indices for parcels belonging to the systems of interest
-        inds = [];
-        for n = 1:numel(system_divisions{sys})
-            inds = [inds; atlas_params.mods{system_divisions{sys}(n)}];
-        end
-    
-        % sets number of subjects and sessions depending on the dataset being
-        [subject, sessions, N] = get_subjects(datasets{d}, exclude_subs);
-    
-        % main loop; starts analysis    
-        count = 1; ses_lims = []; matcheddata_corrlin = [];
-    for s = 1:numel(subject) 
-        ses_count = 0;
-        for i = 1:sessions
-            % for each session and each subject, load the timeseries data...
-            if strcmpi(atlas, 'Seitzman300')            
-                data_file = [data_dir '/sub-' subject{s} '/sub-' subject{s} '_sess-' num2str(i) '_task-rest_corrmat_Seitzman300.mat'];
-            elseif strcmpi(atlas, 'Parcels333')
+                % for each session and each subject, load the timeseries data...
                 data_file = [data_dir '/sub-' subject{s} '_rest_ses-' num2str(i) '_parcel_timecourse.mat'];
-            end
-            
-            if exist(data_file, 'file')
-                load(data_file)
-                if strcmpi(atlas, 'Seitzman300')            
-                    masked_data = sess_roi_timeseries_concat(:,logical(tmask_concat'));
-                elseif strcmpi(atlas, 'Parcels333')
-                    masked_data = parcel_time(logical(tmask_concat), :)';            
-                end
+                if exist(data_file, 'file')
+                    load(data_file)
+                    masked_data = parcel_time(logical(tmask_concat), :)';
 
-            % ... then sample the pre-defined amount of data from the timeseries data...
-                if size(masked_data,2)<amt_data || match_data == 0
-                    matched_data = masked_data;
+                    % ... then sample the pre-defined amount of data from the timeseries data...
+                    if size(masked_data,2)<amt_data || match_data == 0
+                       matched_data = masked_data;
+                    else
+                        matched_data = masked_data(:,1:amt_data);
+                    end
+
+                    disp(sprintf('Total number of sample points for subject %s is %d by %d...', subject{s}, size(matched_data,1), size(matched_data,2)))
+
+                    % ... calculate the correlation matrix...
+                    corrmat_matched_data = paircorr_mod(matched_data');
+
+                    % ... make it linear and store it in a variable...
+                    matcheddata_corrlin(count,:) = single(FisherTransform(corrmat_matched_data(maskmat)));
+
+                    % ... then onto the next session.
+                    count = count + 1; ses_count = ses_count + 1;
                 else
-                    matched_data = masked_data(:,1:amt_data);
+                    disp(sprintf('sub-%s ses-%d data file is missing!', subject{s}, i))
                 end
-
-                %disp(sprintf('Total number of sample points for subject %s session %d is %d by %d...', subject{s}, i, size(matched_data,1), size(matched_data,2)))
-
-                % ... calculate the correlation matrix...
-                systems_of_interest = matched_data(inds, :);
-                corrmat_matched_data = paircorr_mod(systems_of_interest');
-
-                % ... make it linear and store it in a variable...
-                maskmat = ones(size(corrmat_matched_data,1));
-                maskmat = logical(triu(maskmat, 1));
-                matcheddata_corrlin(count,:) = single(FisherTransform(corrmat_matched_data(maskmat)));
-
-%                 % ... then onto the next session.
-                count = count + 1; ses_count = ses_count + 1;
-            else
-                disp(sprintf('sub-%s ses-%d data file is missing!', subject{s}, i))
             end
-        end
-        ses_lims = [ses_lims; ses_count];
+            ses_lims = [ses_lims; ses_count];
     end
 
-    % then, calculate the correlation/similarity across all of those linear matrices
-    simmat = corr(matcheddata_corrlin');
-    clear matcheddata_corrlin
+% then, calculate the correlation/similarity across all of those linear matrices
+simmat = corr(matcheddata_corrlin');
 
 %% MAKE FIGURE
 figure('Position',[1 1 1000 800]);
@@ -150,11 +115,11 @@ set(gca,'XTick',tick_marks(1:numel(subject))+(sessions/2), 'YTick', tick_marks(1
     subject, 'YTickLabel', subject);
 axis square;
 colorbar;
-title(['Correlation Matrix Similarity - ' output_str{sys}]);
+title('Correlation Matrix Similarity');
 if match_data
-    saveas(gcf,[output_dir datasets{d} '_' atlas '_' output_str{sys} '_similarityMat_matchedData_' num2str(amt_data) '.jpg'],'jpg');
+    saveas(gcf,[output_dir datasets{d} '_similarityMat_matchedData_' num2str(amt_data) '_subsample.jpg'],'jpg');
 else
-    saveas(gcf,[output_dir datasets{d} '_' atlas '_' output_str{sys} '_similarityMat_unMatchedData.jpg'],'jpg');
+    saveas(gcf,[output_dir datasets{d} '_similarityMat_unMatchedData_subsample.jpg'],'jpg');
 end
 close('all');
 
@@ -163,7 +128,6 @@ count = 1;
 within = [];
 between = [];
 sessions = ses_lims;
-
 for s = 1:numel(subject)
     if any(contains(exclude_subs, subject{s}))
         continue;
@@ -178,22 +142,20 @@ for s = 1:numel(subject)
         maskmat = ones(size(sub_vals));
         maskmat(:,lines) = 0;
         between = [between; sub_vals(maskmat==1)];
-        sub_means.between(s) = mean(sub_vals(maskmat==1));
         count = count+sessions(s);
+        sub_means.between(s) = mean(sub_vals(maskmat==1));
+        
     end
 end
-
 mean_between = mean(between);
 mean_within = mean(within);
-disp(['The average similarity between subjects for ' output_str{sys} ' is ' num2str(mean(between))])
-disp(['The average similarity within subjects for ' output_str{sys} ' is ' num2str(mean(within))])
-systems = system_divisions{sys};
-save([output_dir datasets{d} '_' atlas '_' output_str{sys} '_similarityMat_MatchedData.mat'], 'simmat', 'amt_data', 'mean_between', 'mean_within', 'subject', 'sub_means', 'systems')
-end
+disp(['The average similarity between subjects is ' num2str(mean(between))])
+disp(['The average similarity within subjects is ' num2str(mean(within))])
+save([output_dir datasets{d} '_similarityMat_matchedData_subsample.mat'], 'simmat', 'amt_data', 'mean_between', 'mean_within', 'sub_means', 'subject', 'ses_lims')
+
 end
 %% THE END
-    
-    
+
 function [subject, sessions, N] = get_subjects(dataset, exclude_subs)
 
 if strcmpi(dataset, 'Lifespan-NU')
@@ -227,6 +189,7 @@ subject(:,find(contains(subject, exclude_subs))) = [];
 N = numel(subject);
 
 end
+    
     
     
     
