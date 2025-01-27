@@ -12,7 +12,7 @@
 % Association: DMN, FP, VAN, CON, DAN, Salience (indices: 1, 3, 4, 5, 6, 7)
 
 
-FC_metrics_dir = '/Volumes/fsmresfiles/PBS/Gratton_Lab/Lifespan/Diana/Diss/FCmetrics_parcels';
+FC_metrics_dir = '/Volumes/fsmresfiles/PBS/Gratton_Lab/Lifespan/Diana/Diss/FCmetrics';
 dataset = {'Lifespan-NU', 'iNet-FSU', 'Lifespan-FSU', 'iNet-NU'};
 exclude_subs = {'LS46', 'INET108', 'LS108', 'INET057'};
 
@@ -22,7 +22,7 @@ for d = 1:numel(dataset)
 
     for s = 1:numel(subjects)
         load(sprintf('%s/sub-%s_FCmetrics.mat', FC_metrics_dir, subjects{s}));
-        out_data = net_data;
+        %out_data = net_data;
         %% calculate weights for each network
         total_surf_indiv = sum(out_data.indiv(1,:));
         total_surf_group = sum(out_data.group(1,:));
@@ -59,6 +59,7 @@ for d = 1:numel(dataset)
         
         if strcmpi(dataset{d}, 'iNet-NU')
             iNet_NU.dice(s,:) = out_data.dice_overlap;
+            iNet_NU.size(s,:) = out_data.indiv(1,:);
             iNet_NU.size_diff(s,:) = out_data.indiv(1,:) - out_data.group(1,:);
             iNet_NU.allnets.summary.wFC(s,1) = sum(tmp(1,:)); % individualized nets
             iNet_NU.allnets.summary.wFC(s,2) = sum(tmp(2,:)); % group nets
@@ -78,6 +79,7 @@ for d = 1:numel(dataset)
             iNet_NU.SM.summary.seg(s,2) = mean(tmp_SM(6,:)); iNet_NU.assoc.summary.seg(s,2) = mean(tmp_assoc(6,:)); % group nets
         elseif strcmpi(dataset{d}, 'Lifespan-NU')
             Lifespan_NU.dice(s,:) = out_data.dice_overlap;
+            Lifespan_NU.size(s,:) = out_data.indiv(1,:);
             Lifespan_NU.size_diff(s,:) = out_data.indiv(1,:) - out_data.group(1,:);
             Lifespan_NU.allnets.summary.wFC(s,1) = sum(tmp(1,:));
             Lifespan_NU.allnets.summary.wFC(s,2) = sum(tmp(2,:));
@@ -97,6 +99,7 @@ for d = 1:numel(dataset)
             Lifespan_NU.SM.summary.seg(s,2) = mean(tmp_SM(6,:)); Lifespan_NU.assoc.summary.seg(s,2) = mean(tmp_assoc(6,:));
         elseif contains(dataset{d}, 'iNet-FSU')
             iNet_FSU.dice(s,:) = out_data.dice_overlap;
+            iNet_FSU.size(s,:) = out_data.indiv(1,:);
             iNet_FSU.size_diff(s,:) = out_data.indiv(1,:) - out_data.group(1,:);
             iNet_FSU.allnets.summary.wFC(s,1) = sum(tmp(1,:)); % individualized nets
             iNet_FSU.allnets.summary.wFC(s,2) = sum(tmp(2,:)); % group nets
@@ -116,6 +119,7 @@ for d = 1:numel(dataset)
             iNet_FSU.SM.summary.seg(s,2) = mean(tmp_SM(6,:)); iNet_FSU.assoc.summary.seg(s,2) = mean(tmp_assoc(6,:)); % group nets
         elseif strcmpi(dataset{d}, 'Lifespan-FSU')
             Lifespan_FSU.dice(s,:) = out_data.dice_overlap;
+            Lifespan_FSU.size(s,:) = out_data.indiv(1,:);
             Lifespan_FSU.size_diff(s,:) = out_data.indiv(1,:) - out_data.group(1,:);
             Lifespan_FSU.allnets.summary.wFC(s,1) = sum(tmp(1,:));
             Lifespan_FSU.allnets.summary.wFC(s,2) = sum(tmp(2,:));
@@ -163,12 +167,12 @@ factors = {age_group', site'};
 % difference in how different the sizes are between individualized and
 % group average networks
 size_diff = [mean(Lifespan_NU.size_diff,2); mean(iNet_NU.size_diff,2); mean(Lifespan_FSU.size_diff,2); mean(iNet_FSU.size_diff,2)];
-aov_size_diff = anova(factors, size_diff, 'ModelSpecification', 'interactions', FactorNames=["Age Group" "Site"])
+%aov_size_diff = anova(factors, size_diff, 'ModelSpecification', 'interactions', FactorNames=["Age Group" "Site"])
 
 % difference in dice coefficient between individualized and
 % group average networks
 dice = [mean(Lifespan_NU.dice,2); mean(iNet_NU.dice,2); mean(Lifespan_FSU.dice,2); mean(iNet_FSU.dice,2)];
-aov_dice = anova(factors, dice, 'ModelSpecification', 'interactions', FactorNames=["Age Group" "Site"])
+%aov_dice = anova(factors, dice, 'ModelSpecification', 'interactions', FactorNames=["Age Group" "Site"])
 
 
 %% 2x2x2 ANOVAS: age group(young adults & older adults) x network scheme (group avg & individualized) x data collection site (NU & FSU)
@@ -197,19 +201,19 @@ factors = {age_group, site, networks'};
 % prepare data: first Lifespan individual nets, second iNet individual
 % nets, third Lifespan group nets, fourth iNet group nets
 wFC = [Lifespan_NU.allnets.wFC(:,1); iNet_NU.allnets.wFC(:,1); Lifespan_FSU.allnets.wFC(:,1); iNet_FSU.allnets.wFC(:,1); Lifespan_NU.allnets.wFC(:,2); iNet_NU.allnets.wFC(:,2); Lifespan_FSU.allnets.wFC(:,2); iNet_FSU.allnets.wFC(:,2)];
-aov_wFC = anova(factors, wFC, 'ModelSpecification', 'interactions', FactorNames=["Age Group" "Site" "Network Parcellation"])
+%aov_wFC = anova(factors, wFC, 'ModelSpecification', 'interactions', FactorNames=["Age Group" "Site" "Network Parcellation"])
 
 %% comparing between-net FC
 % prepare data: first Lifespan individual nets, second iNet individual
 % nets, third Lifespan group nets, fourth iNet group nets
 bFC = [Lifespan_NU.allnets.bFC(:,1); iNet_NU.allnets.bFC(:,1); Lifespan_FSU.allnets.bFC(:,1); iNet_FSU.allnets.bFC(:,1); Lifespan_NU.allnets.bFC(:,2); iNet_NU.allnets.bFC(:,2); Lifespan_FSU.allnets.bFC(:,2); iNet_FSU.allnets.bFC(:,2)];
-aov_bFC = anova(factors, bFC, 'ModelSpecification', 'interactions', FactorNames=["Age Group" "Site" "Network Parcellation"])
+%aov_bFC = anova(factors, bFC, 'ModelSpecification', 'interactions', FactorNames=["Age Group" "Site" "Network Parcellation"])
 
 %% comparing segregation index
 % prepare data: first Lifespan individual nets, second iNet individual
 % nets, third Lifespan group nets, fourth iNet group nets
 seg = [Lifespan_NU.allnets.seg(:,1); iNet_NU.allnets.seg(:,1); Lifespan_FSU.allnets.seg(:,1); iNet_FSU.allnets.seg(:,1); Lifespan_NU.allnets.seg(:,2); iNet_NU.allnets.seg(:,2); Lifespan_FSU.allnets.seg(:,2); iNet_FSU.allnets.seg(:,2)];
-aov_seg = anova(factors, seg, 'ModelSpecification', 'interactions', FactorNames=["Age Group" "Site" "Network Parcellation"])
+%aov_seg = anova(factors, seg, 'ModelSpecification', 'interactions', FactorNames=["Age Group" "Site" "Network Parcellation"])
 
 %% 2x2x2x2 ANOVAS: age group(young adults & older adults) x network parcellation (group avg & individualized) x network class (sensorimotor & association) x data collection site (NU & FSU)
 % set up labels for age_group factor
@@ -233,7 +237,7 @@ factors = {age_group, site, networks, class'};
 SM_wFC = [Lifespan_NU.SM.wFC(:,1); iNet_NU.SM.wFC(:,1); Lifespan_FSU.SM.wFC(:,1); iNet_FSU.SM.wFC(:,1); Lifespan_NU.SM.wFC(:,2); iNet_NU.SM.wFC(:,2); Lifespan_FSU.SM.wFC(:,2); iNet_FSU.SM.wFC(:,2)];
 assoc_wFC = [Lifespan_NU.assoc.wFC(:,1); iNet_NU.assoc.wFC(:,1); Lifespan_FSU.assoc.wFC(:,1); iNet_FSU.assoc.wFC(:,1); Lifespan_NU.assoc.wFC(:,2); iNet_NU.assoc.wFC(:,2); Lifespan_FSU.assoc.wFC(:,2); iNet_FSU.assoc.wFC(:,2)];
 wFC = [SM_wFC; assoc_wFC];
-aov_wFC = anova(factors, wFC, 'ModelSpecification', 'interactions', FactorNames=["Age Group" "Site" "Network Parcellation" "Network Class"])
+%aov_wFC = anova(factors, wFC, 'ModelSpecification', 'interactions', FactorNames=["Age Group" "Site" "Network Parcellation" "Network Class"])
 
 %% comparing between-net FC
 % prepare data: first Lifespan individual nets, second iNet individual
@@ -241,7 +245,7 @@ aov_wFC = anova(factors, wFC, 'ModelSpecification', 'interactions', FactorNames=
 SM_bFC = [Lifespan_NU.SM.bFC(:,1); iNet_NU.SM.bFC(:,1); Lifespan_FSU.SM.bFC(:,1); iNet_FSU.SM.bFC(:,1); Lifespan_NU.SM.bFC(:,2); iNet_NU.SM.bFC(:,2); Lifespan_FSU.SM.bFC(:,2); iNet_FSU.SM.bFC(:,2)];
 assoc_bFC = [Lifespan_NU.assoc.bFC(:,1); iNet_NU.assoc.bFC(:,1); Lifespan_FSU.assoc.bFC(:,1); iNet_FSU.assoc.bFC(:,1); Lifespan_NU.assoc.bFC(:,2); iNet_NU.assoc.bFC(:,2); Lifespan_FSU.assoc.bFC(:,2); iNet_FSU.assoc.bFC(:,2)];
 bFC = [SM_bFC; assoc_bFC];
-aov_bFC = anova(factors, bFC, 'ModelSpecification', 'interactions', FactorNames=["Age Group" "Site" "Network Parcellation" "Network Class"])
+%aov_bFC = anova(factors, bFC, 'ModelSpecification', 'interactions', FactorNames=["Age Group" "Site" "Network Parcellation" "Network Class"])
 
 %% comparing segregation index
 % prepare data: first Lifespan individual nets, second iNet individual
@@ -249,7 +253,7 @@ aov_bFC = anova(factors, bFC, 'ModelSpecification', 'interactions', FactorNames=
 SM_seg = [Lifespan_NU.assoc.seg(:,1); iNet_NU.assoc.seg(:,1); Lifespan_FSU.assoc.seg(:,1); iNet_FSU.assoc.seg(:,1); Lifespan_NU.assoc.seg(:,2); iNet_NU.assoc.seg(:,2); Lifespan_FSU.assoc.seg(:,2); iNet_FSU.assoc.seg(:,2)];
 assoc_seg = [Lifespan_NU.assoc.seg(:,1); iNet_NU.assoc.seg(:,1); Lifespan_FSU.assoc.seg(:,1); iNet_FSU.assoc.seg(:,1); Lifespan_NU.assoc.seg(:,2); iNet_NU.assoc.seg(:,2); Lifespan_FSU.assoc.seg(:,2); iNet_FSU.assoc.seg(:,2)];
 seg = [SM_seg; assoc_seg];
-aov_seg = anova(factors, seg, 'ModelSpecification', 'interactions', FactorNames=["Age Group" "Site" "Network Parcellation" "Network Class"])
+%aov_seg = anova(factors, seg, 'ModelSpecification', 'interactions', FactorNames=["Age Group" "Site" "Network Parcellation" "Network Class"])
 
 
 

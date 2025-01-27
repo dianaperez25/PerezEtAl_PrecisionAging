@@ -2,7 +2,7 @@
 dataset = {'Lifespan-NU', 'iNet-FSU', 'Lifespan-FSU', 'iNet-NU'};
 exclude_subs = {'LS46', 'INET108', 'LS108', 'INET057'};
 FC_metrics_dir = '/Volumes/fsmresfiles/PBS/Gratton_Lab/Lifespan/Diana/Diss/FCmetrics';
-outdir = '/Users/dianaperez/Desktop/';
+outdir = '/Users/diana/Desktop/';
 rgb_colors = [1 0 0;
                   0 0 .6;
                   1 1 0;
